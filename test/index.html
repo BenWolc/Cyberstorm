@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Realtime LLM Demo</title>
+  <title>Realtime LLM Stream Demo</title>
   <style>
     body { font-family: sans-serif; margin: 2em; }
     textarea { width: 100%; height: 100px; }
@@ -17,25 +17,67 @@
   <pre id="response"></pre>
 
   <script>
+    const messages = [
+      { role: "system", content: "You are a helpful assistant." }
+    ];
+
+    async function readLLMStream(response, onChunk) {
+      const decoder = new TextDecoder("utf-8");
+      const reader = response.body.getReader();
+      let buffer = "";
+      let collectedMessages = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop(); // keep last partial line
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const jsonPart = trimmed.slice("data:".length).trim();
+          if (jsonPart === "[DONE]") {
+            // Stream finished: append full assistant message to memory
+            const fullReply = collectedMessages.join("");
+            messages.push({ role: "assistant", content: fullReply });
+            console.log("Memory updated:", messages);
+            return;
+          }
+
+          try {
+            const parsed = JSON.parse(jsonPart);
+            const chunkMessage = parsed?.choices?.[0]?.delta?.content ?? "";
+            if (chunkMessage) {
+              collectedMessages.push(chunkMessage);
+              onChunk(chunkMessage);
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
+      }
+    }
+
     document.getElementById("send").onclick = async () => {
       const prompt = document.getElementById("prompt").value;
       const responseBox = document.getElementById("response");
       responseBox.textContent = "";
 
-      const response = await fetch("http://localhost:3000/api/generate", {
+      // Add user's message to memory
+      messages.push({ role: "user", content: prompt });
+
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt })
       });
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        responseBox.textContent += decoder.decode(value, { stream: true });
-      }
+      await readLLMStream(response, chunk => {
+        responseBox.textContent += chunk;
+      });
     };
   </script>
 </body>

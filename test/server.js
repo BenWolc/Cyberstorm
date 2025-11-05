@@ -1,32 +1,42 @@
-const express = require("express");
-const fetch = require("node-fetch");
-const cors = require("cors");
+import express from "express";
+import fetch from "node-fetch";
+import cors from "cors";
+
+// const express = require("express");
+// const fetch = require("node-fetch");
+// const cors = require("cors");
 
 const app = express();
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-// Stream OpenAI-style responses through to the browser
 app.post("/api/generate", async (req, res) => {
-  const { messages } = req.body;
+  const { messages } = req.body; // <-- Expect full messages array now
 
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
+  if (!Array.isArray(messages)) {
+    res.status(400).json({ error: "Missing or invalid 'messages' array" });
+    return;
+  }
 
-  const upstream = await fetch("http://10.21.67.7:8080/v1/chat/completions", {
+  // Forward to OpenAI (streaming)
+  const upstream = await fetch("http://172.21.67.7/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       model: "gpt-3.5-turbo",
-      messages: messages,
-      stream: true,
+      messages,      // ✅ Send the whole conversation
+      stream: true,  // enable streaming
     }),
   });
 
-  // Pipe chunks directly
+  // Set up streaming response to frontend
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  // Pipe OpenAI stream directly through
   for await (const chunk of upstream.body) {
     res.write(chunk);
   }

@@ -64,7 +64,8 @@
     document.getElementById("send").onclick = async () => {
       const prompt = document.getElementById("prompt").value;
       const responseBox = document.getElementById("response");
-      responseBox.textContent = "";
+      responseBox.textContent += "\nYou: " + prompt + "\n";
+      responseBox.textContent += "CopenAI: ";
 
       // Add user's message to memory
       messages.push({ role: "user", content: prompt });

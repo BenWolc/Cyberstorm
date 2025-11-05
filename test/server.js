@@ -19,7 +19,7 @@ app.post("/api/generate", async (req, res) => {
   }
 
   // Forward to OpenAI (streaming)
-  const upstream = await fetch("http://10.21.67.7/v1/chat/completions", {
+  const upstream = await fetch("http://10.21.67.7:8080/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

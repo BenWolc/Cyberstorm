@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- put inside <head> -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
   <meta charset="UTF-8" />
   <title>Realtime LLM Stream Demo</title>
   <style>
@@ -10,12 +13,33 @@
   </style>
 </head>
 <body>
-  <h1>Realtime LLM Stream Demo</h1>
-  <textarea id="prompt" placeholder="Type your prompt..."></textarea><br>
-  <button id="send">Send</button>
-  <h3>Response:</h3>
-  <pre id="response"></pre>
+  <div class="app">
+    <div class="sidebar">
+      <div class="brand">
+        <div class="logo">AI</div>
+        <div>
+          <div class="app-title">My AI Assistant</div>
+          <div class="app-desc">Fast streaming answers</div>
+        </div>
+      </div>
 
+      <div class="history" id="history"></div>
+    </div>
+
+    <div class="main">
+      <div class="messages" id="messages">
+        <!-- chat messages here -->
+        <div class="message assistant">
+          <div class="response" id="response"></div>
+        </div>
+      </div>
+
+      <div class="composer">
+        <textarea id="prompt" placeholder="Ask the assistant anything..."></textarea>
+        <button id="send">Send</button>
+      </div>
+    </div>
+  </div>
   <script>
     const messages = [
       { role: "system", content: "You are a helpful assistant." }
